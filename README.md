@@ -83,6 +83,11 @@ run some terminal commands to set up the basics:
      opam install qcheck ocamlfind ledit ocamlbuild merlin ocp-indent user-setup utop
     ```
 
+    If issues arise with the installation of dependencies, beware that any fixes might not immidiately work due to how opam is caching dependencies, therefore after resolving an issue also remember to clean the cache with:
+
+    ```
+    sudo opam clean
+    ```
 
 For Windows:
 ------------

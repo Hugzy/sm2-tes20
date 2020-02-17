@@ -1,6 +1,5 @@
-lec02.byte: lec02.ml
-	ocamlbuild -use-ocamlfind -package qcheck lec02.byte
-
+all: class_excersices.ml
+	ocamlbuild -use-ocamlfind -package qcheck class_excersices.byte
 
 clean:
 	ocamlbuild -clean

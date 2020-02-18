@@ -34,6 +34,14 @@ type aexp =
 
 let mytree = Plus (Lit 1, Times (X, Lit 3))
 
+let rec size aexp = match aexp with
+  | X -> 0
+  | Lit(ae0) -> 0
+  | Plus(ae0, ae1) ->
+    1+(size ae0) + 1+ (size ae1)
+    | Times(ae0, ae1) ->
+    1+(size ae0) + 1 + (size ae1)
+
 (* our interpreter of arithmetic expressions *)
 let rec interpret xval ae = match ae with
   | X -> xval

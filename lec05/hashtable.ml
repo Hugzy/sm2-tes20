@@ -50,7 +50,8 @@ struct
     | Remove k  -> Hashtbl.remove h k; true
     | Find k    ->
       List.assoc_opt k s = (try Some (Hashtbl.find h k)
-                            with Not_found -> None)
+                            with Not_found -> Hashtbl.add h k 0;
+                                              None)
     | Mem k     -> List.mem_assoc k s = Hashtbl.mem h k
 
   let precond _ _ = true

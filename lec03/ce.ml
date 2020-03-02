@@ -1,3 +1,5 @@
+open QCheck
+
 (** Assignment 1
 a. Write a function size : aexp -> int that computes the size of an arithmetic expression.
 
@@ -15,6 +17,34 @@ type aexp =
   | Plus of aexp * aexp
   | Times of aexp * aexp
 
+let leafgen = Gen.oneof
+                [Gen.return X;
+                 Gen.map (fun i -> Lit i) Gen.int]
+
+(* a fixed-point generator without weights *)
+let mygen'' =
+  Gen.sized (Gen.fix (fun recgen n -> match n with
+    | 0 -> leafgen
+    | n ->
+      Gen.oneof
+	      [leafgen;
+	       Gen.map2 (fun l r -> Plus(l,r)) (recgen(n/2)) (recgen(n/2));
+	       Gen.map2 (fun l r -> Times(l,r)) (recgen(n/2)) (recgen(n/2)); ]))
+
+let rec exp_to_string ae = match ae with
+  | X -> "x"
+  | Lit i -> string_of_int i
+  | Plus (ae0, ae1) ->
+    let s0 = exp_to_string ae0 in
+    let s1 = exp_to_string ae1 in
+    "(" ^ s0 ^ "+" ^ s1 ^ ")"
+  | Times (ae0, ae1) ->
+    let s0 = exp_to_string ae0 in
+    let s1 = exp_to_string ae1 in
+    "(" ^ s0 ^ "*" ^ s1 ^ ")"
+
+let arb_tree = make ~print:exp_to_string (mygen'')
+
 let mytree = Plus (Lit 1, Times (X, Lit 3))
 
 let rec size aexp = match aexp with
@@ -22,7 +52,7 @@ let rec size aexp = match aexp with
   | Lit(ae0) -> 0
   | Plus(ae0, ae1) ->
     1+(size ae0) + (size ae1)
-    | Times(ae0, ae1) ->
+  | Times(ae0, ae1) ->
     1+(size ae0) + (size ae1)
 
 let rec size2 aexp = match aexp with
@@ -84,19 +114,19 @@ let rec compile ae = match ae with
     let is1 = compile ae1 in
     is0 @ is1 @ [Mult]
 
-exception Stack_doesnot_have_two_elements
-exception Cannot_divide_by_zero
+exception Stack_doesnot_have_two_elements_exception
+exception Cannot_divide_by_zero_exception
 
-let rec loop instructions stack reg = match instructions, stack with
+let rec run instructions stack reg = match instructions, stack with
   | [], _ -> stack
-  | Load::tail, _ -> loop tail (reg::stack) reg
-  | Push i::tail, _ -> loop tail (i::stack) reg
-  | Add::tail, el1::el2::rest -> loop tail ((el1+el2)::rest) reg
-  | Subtract::tail, el1::el2::rest -> loop tail ((el1-el2)::rest) reg
-  | Mult::tail, el1::el2::rest -> loop tail ((el1*el2)::rest) reg
-  | Division::tail, el1::el2::rest when el2 != 0 -> loop tail ((el1/el2)::rest) reg
-  | Division::tail, el1::el2::rest when el2 = 0 -> raise Cannot_divide_by_zero
-  | (Add::_ | Subtract::_ | Mult::_| Division::_), _ -> raise Stack_doesnot_have_two_elements
+  | Load::tail, _ -> run tail (reg::stack) reg
+  | Push i::tail, _ -> run tail (i::stack) reg
+  | Add::tail, el1::el2::rest -> run tail ((el1+el2)::rest) reg
+  | Subtract::tail, el1::el2::rest -> run tail ((el1-el2)::rest) reg
+  | Mult::tail, el1::el2::rest -> run tail ((el1*el2)::rest) reg
+  | Division::tail, el1::el2::rest when el2 != 0 -> run tail ((el1/el2)::rest) reg
+  | Division::tail, el1::el2::rest when el2 = 0 -> raise Cannot_divide_by_zero_exception
+  | (Add::_ | Subtract::_ | Mult::_ | Division::_), _ -> raise Stack_doesnot_have_two_elements_exception
 
 
 (** Stuff *)
@@ -117,9 +147,22 @@ a. Program an alternative integer generator by combining different generators su
 b. Compute statistics for your generator's distribution and compare them
  *)
 
+ let my_gen = Gen.frequency [
+   (5, Gen.int);
+   (5, Gen.small_signed_int);
+   (1, Gen.return (Int64.to_int(Int64.max_int)));
+   (1, Gen.return (Int64.to_int(Int64.min_int)));
+   (1, Gen.return (-1));
+   (1, Gen.return (0));
+   (1, Gen.return (1));
+ ];;
+
 (** Assignment 4
 Use Gen.int_bound to write a generator representing a pair of dices and compute statistics for their sum.
  *)
+
+let dice_gen = 
+  Gen.pair (Gen.map (fun i -> i+1) (Gen.int_bound 5)) (Gen.map (fun i -> i+1) (Gen.int_bound 5))
 
 (** Assignment 5
 int_of_string : string -> int attempts to parse a string as a number, and throws an exception Failure "int_of_string" when it can't:
@@ -150,6 +193,11 @@ List.find_opt : ('a -> bool) -> 'a list -> 'a option returns an option type repr
 - : int option = None
 Write a wrapper my_list_find : ('a -> bool) -> 'a list -> 'a that calls List.find_opt and instead returns the found element or throws exception Not_found.
  *)
+
+let my_list_find predicate list = match List.find_opt predicate list with
+  | None -> raise Not_found
+  | i -> i
+
 
 (** Assignment 7
 Consider the following representation of Red-Black trees: https://en.wikipedia.org/wiki/Red%E2%80%93black_tree

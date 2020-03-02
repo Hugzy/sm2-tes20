@@ -14,12 +14,13 @@ struct
   type cmd =
     | Pop (* may throw exception *)
     | Top (* may throw exception *)
+    | Len
     | Push of int [@@deriving show { with_path = false }]
 
   let gen_cmd s =
     let int_gen = Gen.small_nat in
     if s = []
-    then Gen.map (fun i -> Push i) int_gen (* don't generate pop/tops from empty *)
+    then Gen.oneof[Gen.map (fun i -> Push i) int_gen; Gen.return Len] (* don't generate pop/tops from empty *)
     else Gen.oneof
            [Gen.return Pop;
             Gen.return Top;
@@ -34,8 +35,9 @@ struct
         | []    -> []
         | _::s' -> s')
     | Top -> s
-    | Push i -> (*s@[i]*)
-      if i<>98 then s@[i] else s  (* an artificial fault in the model *)
+    | Push i -> s@[i]
+      (* if i<>98 then s@[i] else s *)  (* an artificial fault in the model *)
+    | Len -> s
 
   let init_sut () = Queue.create ()
   let cleanup _   = ()
@@ -43,11 +45,13 @@ struct
     | Pop -> (try Queue.pop q = List.hd s with _ -> false)
     | Top -> (try Queue.top q = List.hd s with _ -> false)
     | Push n -> Queue.push n q; true
+    | Len -> Queue.length q = List.length s 
 
   let precond c s = match c with
     | Pop    -> s<>[]
     | Top    -> s<>[]
     | Push _ -> true
+    | Len -> true
 end
 
 module QT = QCSTM.Make(QConf)

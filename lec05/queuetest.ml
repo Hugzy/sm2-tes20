@@ -24,7 +24,8 @@ struct
     else Gen.oneof
            [Gen.return Pop;
             Gen.return Top;
-            Gen.map (fun i -> Push i) int_gen]
+            Gen.map (fun i -> Push i) int_gen;
+            Gen.return Len]
 
   let arb_cmd s = QCheck.make ~print:show_cmd (gen_cmd s)
 

@@ -44,10 +44,20 @@ struct
   (*  run_cmd : cmd -> state -> (string, int) Hashtbl.t -> bool *)
   let run_cmd c s h = match c with
     | Add (k,v) ->
+<<<<<<< HEAD
         Hashtbl.add h k v; true
       (* Hashtbl.add h k (v+1); true *)
       (*if String.length k <= 2 then Hashtbl.add h k v else Hashtbl.add h k (v+1); true *)
     | Remove k  -> Hashtbl.remove h k; true
+=======
+      (* begin Hashtbl.add h k v; true end *)
+      (* begin Hashtbl.add h k (v+1); true end *)
+      begin
+        if String.length k <= 2 then Hashtbl.add h k v else Hashtbl.add h k (v+1); 
+        true
+      end
+    | Remove k  -> begin Hashtbl.remove h k; true end
+>>>>>>> ebfc351134e671e7d3f7def7717373dd7ac054e7
     | Find k    ->
       List.assoc_opt k s = (try Some (Hashtbl.find h k)
                             with Not_found -> None)
